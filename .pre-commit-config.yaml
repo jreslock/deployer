@@ -1,0 +1,58 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: go fmt
+        description: Runs go fmt using the Taskfile
+        entry: task fmt
+        language: system
+        pass_filenames: false
+        types: [go]
+
+      - id: golangci-lint
+        name: golangci-lint
+        description: Runs golangci-lint using the Taskfile
+        entry: task lint
+        language: system
+        pass_filenames: false
+        types: [go]
+
+      - id: go-test
+        name: go test
+        description: Runs go test using the Taskfile
+        entry: task test
+        language: system
+        pass_filenames: false
+        types: [go]
+
+      - id: go-mod-tidy
+        name: go mod tidy
+        description: Runs go mod tidy using the Taskfile
+        entry: task tidy
+        language: system
+        pass_filenames: false
+        types: [go]
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.99.0
+    hooks:
+      - id: terraform_fmt
+        args:
+        - --hook-config=--tf-path=/usr/bin/tofu
+        - --args=-recursive -check
+      - id: terraform_docs
+        args:
+          - --hook-config=--tf-path=/usr/bin/tofu
+          - --args=config=./terraform-docs.yml

@@ -1,0 +1,177 @@
+version: '3'
+
+vars:
+  BINARY_NAME: deployer
+  GO_VERSION: '1.24'
+  ARTIFACTS_DIR: artifacts
+  SRC_DIR: lambda_functions/{{ .BINARY_NAME }}
+
+tasks:
+  default:
+    cmds:
+      - task --list-all
+    silent: true
+
+  build:
+    desc: Build the binary and container image
+    deps:
+      - clean
+    cmds:
+      - mkdir -p {{.ARTIFACTS_DIR}}
+      - cd {{ .SRC_DIR }} && CGO_ENABLED=0 GOOS=linux GOOS_ARCH=amd64 go build -o
+       ../../{{.ARTIFACTS_DIR}}/{{.BINARY_NAME}}-linux-amd64 main.go
+      # Build a container image to push to ECR
+      - docker buildx build --platform=linux/amd64 --provenance=false -t {{ .BINARY_NAME }} -f {{ .SRC_DIR }}/Dockerfile .
+
+  fmt:
+    desc: Run go fmt
+    cmds:
+      - cd {{ .SRC_DIR }} && go fmt
+
+  test:
+    desc: Run tests
+    cmds:
+      - cd {{ .SRC_DIR }} && go test ./...
+
+  lint:
+    desc: Run linters
+    cmds:
+      - cd {{ .SRC_DIR }} && go vet ./...
+      - cd {{ .SRC_DIR }} && golangci-lint run
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.ARTIFACTS_DIR}}
+
+  tidy:
+    desc: Run go mod tidy in the correct directory
+    cmds:
+     - cd {{ .SRC_DIR }} && go mod tidy
+
+  version:
+    desc: Show current version
+    cmds:
+      - svu current
+
+  get-current-tag:
+    desc: Get the current version tag
+    cmds:
+      - svu current
+
+  get-next-tag:
+    desc: Get the next version tag based on VERSION_TYPE
+    vars:
+      VERSION_TYPE: patch
+    cmds:
+      - svu {{.VERSION_TYPE}}
+
+  bump-version:
+    desc: Bump version (patch, minor, or major)
+    env:
+      GITHUB_TOKEN: '{{.GITHUB_TOKEN}}'
+    vars:
+      VERSION_TYPE: patch
+      CURRENT_TAG:
+        sh: task get-current-tag | tail -n 1
+      NEXT_TAG:
+        sh: task get-next-tag VERSION_TYPE={{.VERSION_TYPE}} | tail -n 1
+    deps:
+      - lint
+      - build
+      - test
+    cmds:
+      - echo "Bumping version from {{.CURRENT_TAG}} to {{.NEXT_TAG}}"
+      - git config user.name "release-automator[bot]"
+      - git config user.email
+        "1208257+release-automator[bot]@users.noreply.github.com"
+      - git remote set-url origin
+        https://x-access-token:${GITHUB_TOKEN}@github.com/jreslock/deployer.git
+      - git config --unset-all http.https://github.com/.extraheader
+      - task changelog NEXT_TAG={{.NEXT_TAG}}
+      - git add CHANGELOG.md
+      - git commit -am "Release {{.NEXT_TAG}}"
+      - git tag -a {{.NEXT_TAG}} -m "Release {{.NEXT_TAG}}"
+      - echo "Pushing changes to main branch..."
+      - git push origin main || (echo "Failed to push to main branch" && exit 1)
+      - echo "Pushing tag {{.NEXT_TAG}}..."
+      - git push origin {{.NEXT_TAG}} || (echo "Failed to push tag
+        {{.NEXT_TAG}}" && exit 1)
+
+  bump-patch:
+    desc: Bump patch version
+    vars:
+      VERSION_TYPE: patch
+    cmds:
+      - task bump-version VERSION_TYPE={{.VERSION_TYPE}}
+
+  bump-minor:
+    desc: Bump minor version
+    vars:
+      VERSION_TYPE: minor
+    cmds:
+      - task bump-version VERSION_TYPE={{.VERSION_TYPE}}
+
+  bump-major:
+    desc: Bump major version
+    vars:
+      VERSION_TYPE: major
+    cmds:
+      - task bump-version VERSION_TYPE={{.VERSION_TYPE}}
+
+  changelog:
+    desc: Generate changelog
+    cmds:
+      - echo "Generating changelog with NEXT_TAG={{.NEXT_TAG}}"
+      - git-chglog --next-tag {{.NEXT_TAG}} -o CHANGELOG.md
+
+  publish_image:
+    desc: Tag and publish container image to ECR
+    vars:
+      ECR: "389719579847.dkr.ecr.us-east-1.amazonaws.com"
+      TAG:
+        sh: task get-current-tag | tail -n 1
+    cmds:
+      - aws ecr get-login-password --region us-east-1 | docker login --usename AWS --password-stdin {{ .ECR }}
+      - docker tag {{ .BINARY_NAME }} {{ .ECR }}/{{ .BINARY_NAME }}:latest
+      - docker tag {{ .BINARY_NAME }} {{ .ECR }}/{{ .BINARY_NAME }}:{{ .TAG }}
+      - docker push {{ .ECR }}/{{ .BINARY_NAME }}:latest
+      - docker push {{ .ECR }}/{{ .BINARY_NAME }}:${{ .TAG }}
+
+  release:
+    desc: Create a new release
+    deps:
+      - lint
+      - test
+    env:
+      GITHUB_TOKEN: '{{.GITHUB_TOKEN}}'
+    cmds:
+      - goreleaser release --clean
+
+  release-snapshot:
+    desc: Create a snapshot release
+    deps:
+      - lint
+      - test
+    env:
+      GITHUB_TOKEN: '{{.GITHUB_TOKEN}}'
+    cmds:
+      - goreleaser release --snapshot --clean
+
+  pre-commit-install:
+    desc: Install pre-commit hooks
+    cmds:
+      - pre-commit clean
+      - pre-commit install
+
+  pre-commit-run:
+    desc: Run pre-commit hooks on all files
+    deps:
+      - pre-commit-install
+    cmds:
+      - pre-commit run --all-files
+
+  pre-commit-update:
+    desc: Update pre-commit hooks to latest versions
+    cmds:
+      - pre-commit autoupdate

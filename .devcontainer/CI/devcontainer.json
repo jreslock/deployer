@@ -1,0 +1,38 @@
+{
+    "name": "deployer-ci",
+    "build": {
+        "dockerfile": "../Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.go",
+                "ms-azuretools.vscode-docker"
+            ],
+            "settings": {
+                "go.toolsEnvVars": {
+                    "GOFLAGS": "-mod=mod",
+                    "GO111MODULE": "on"
+                },
+                "go.useLanguageServer": true,
+                "go.lintTool": "golangci-lint",
+                "go.lintFlags": [
+                    "--fast"
+                ],
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": "always"
+                }
+            }
+        }
+    },
+    "remoteUser": "root",
+    "postStartCommand": {
+        "safe-dir": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+    },
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "workspaceFolder": "/workspace",
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind,consistency=cached,readonly=false"
+    ]
+}
