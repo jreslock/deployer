@@ -22,7 +22,6 @@ subscribers can source from a single publisher if desired.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_name"></a> [name](#input\_name) | Name for all resources created | `string` | n/a | yes |
-| <a name="input_role_arn"></a> [role\_arn](#input\_role\_arn) | AWS Role ARN for the provider to assume | `string` | n/a | yes |
 
 ## Outputs
 
