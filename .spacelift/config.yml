@@ -2,30 +2,25 @@ version: 1
 
 stacks:
   lambda-deployer-pub:
-      terraform:
-        init:
-          extra_args: [
-            "-backend-config=./vars/dev/backend.vars",
-          ]
-        plan:
-          extra_args: [
-            "-var-file=./vars/dev/target.tfvars",
-          ]
-        apply:
-          extra_args: [
-            "-var-file=./vars/dev/target.tfvars",
-          ]
+    terraform:
+      init:
+        extra_args:
+          - "-backend-config=./vars/dev/backend.vars"
+      plan:
+        extra_args:
+          - "-var-file=./vars/dev/target.tfvars"
+      apply:
+        extra_args:
+          - "-var-file=./vars/dev/target.tfvars"
+
   lambda-deployer-sub:
-      terraform:
-        init:
-          extra_args: [
-            "-backend-config=./vars/dev/backend.vars",
-          ]
-        plan:
-          extra_args: [
-            "-var-file=./vars/dev/target.tfvars",
-          ]
-        apply:
-          extra_args: [
-            "-var-file=./vars/dev/target.tfvars",
-          ]
+    terraform:
+      init:
+        extra_args:
+          - "-backend-config=./vars/dev/backend.vars"
+      plan:
+        extra_args:
+          - "-var-file=./vars/dev/target.tfvars"
+      apply:
+        extra_args:
+          - "-var-file=./vars/dev/target.tfvars"
