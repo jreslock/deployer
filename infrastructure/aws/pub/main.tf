@@ -31,7 +31,7 @@ locals {
 module "ecr" {
   source                 = "../../modules/aws/ecr"
   name                   = "deployer_lambda"
-  image_publish_role_arn = "arn:aws:iam::${module.context.aws_account_id}:role/github-actions"
+  image_publish_role_arn = "arn:aws:iam::${module.context.aws_account_id}:role/github_actions"
 }
 
 # Create an inline IAM policy for the actions role so it can
