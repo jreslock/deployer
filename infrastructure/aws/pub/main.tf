@@ -72,10 +72,6 @@ resource "aws_cloudwatch_event_target" "sns" {
 # Provider/boilerplate to set up the providers
 provider "aws" {
   region = "us-east-1"
-  assume_role {
-    role_arn     = var.role_arn
-    session_name = "${local.name}-infrastructure-provisioning"
-  }
   default_tags {
     tags = {
       Name = local.name

@@ -8,11 +8,6 @@ variable "log_retention_days" {
   type        = number
 }
 
-variable "role_arn" {
-  description = "AWS Role ARN for the provider to assume"
-  type        = string
-}
-
 variable "sns_topic_arn" {
   description = "The SNS Topic ARN to route events to"
   type        = string
