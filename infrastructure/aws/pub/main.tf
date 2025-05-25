@@ -37,7 +37,7 @@ module "ecr" {
 # Create an inline IAM policy for the actions role so it can
 # push to ECR
 resource "aws_iam_role_policy" "actions_ecr_publish" {
-  role   = "github-actions"
+  role   = "github_actions"
   policy = data.aws_iam_policy_document.actions_ecr_publish.json
 }
 
