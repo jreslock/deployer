@@ -175,3 +175,14 @@ tasks:
     desc: Update pre-commit hooks to latest versions
     cmds:
       - pre-commit autoupdate
+
+  tf-docs:
+      desc: Generate tf-docs for all modules
+      cmds:
+        - |
+          echo "Running terraform-docs for all modules..."
+          find infrastructure -type f -name main.tf | while read -r tf_file; do
+            dir=$(dirname "$tf_file")
+            echo "Updating docs in $dir"
+            (cd "$dir" && terraform-docs . --config=$(git rev-parse --show-toplevel)/.terraform-docs.yml)
+          done

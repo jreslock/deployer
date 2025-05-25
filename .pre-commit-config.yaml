@@ -45,14 +45,20 @@ repos:
         pass_filenames: false
         types: [go]
 
+      - id: tf-docs
+        name: tf-docs
+        description: Updates infrastructure module docs using the Taskfile
+        entry: task tf-docs
+        language: system
+        pass_filenames: false
+        types: [terraform]
+
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.99.0
     hooks:
       - id: terraform_fmt
-        args:
-        - --hook-config=--tf-path=/usr/bin/tofu
-        - --args=-recursive -check
-      - id: terraform_docs
-        args:
-          - --hook-config=--tf-path=/usr/bin/tofu
-          - --args=config=./terraform-docs.yml
+        args: [
+          "--hook-config=--tf-path=/usr/bin/tofu",
+          "--args=-recursive -check"
+        ]
+        files: ^infrastructure/(modules/aws|aws)/.*\.tf$
