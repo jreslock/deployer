@@ -87,9 +87,9 @@ jobs:
               id: aws-credentials
               uses: aws-actions/configure-aws-credentials@v4
               with:
-                role-to-assume: $${{ env.AWS_ROLE_ARN }}
-                role-session-name: $${{ env.AWS_ROLE_SESSION_NAME }}
-                aws-region: $${{ env.AWS_REGION }}
+                role-to-assume: ${{ env.AWS_ROLE_ARN }}
+                role-session-name: ${{ env.AWS_ROLE_SESSION_NAME }}
+                aws-region: ${{ env.AWS_REGION }}
                 output-credentials: true
 
             - name: Get Release Bot Token
@@ -117,7 +117,7 @@ jobs:
                     echo "Bumping version from $CURRENT_TAG to $NEXT_TAG"
                     task bump-${{ steps.determine_bump.outputs.bump }}
                     task build-all
-                    if [ "$${{ github.event_name }}" = "workflow_dispatch" ] && [ "$${{ github.event.inputs.snapshot }}" = "true" ]; then
+                    if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.snapshot }}" = "true" ]; then
                         task release-snapshot
                     else
                         task release
