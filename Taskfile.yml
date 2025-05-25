@@ -76,10 +76,6 @@ tasks:
         sh: task get-current-tag | tail -n 1
       NEXT_TAG:
         sh: task get-next-tag VERSION_TYPE={{.VERSION_TYPE}} | tail -n 1
-    deps:
-      - lint
-      - build
-      - test
     cmds:
       - echo "Bumping version from {{.CURRENT_TAG}} to {{.NEXT_TAG}}"
       - git config user.name "release-automator[bot]"
@@ -95,8 +91,7 @@ tasks:
       - echo "Pushing changes to main branch..."
       - git push origin main || (echo "Failed to push to main branch" && exit 1)
       - echo "Pushing tag {{.NEXT_TAG}}..."
-      - git push origin {{.NEXT_TAG}} || (echo "Failed to push tag
-        {{.NEXT_TAG}}" && exit 1)
+      - git push origin {{.NEXT_TAG}} || (echo "Failed to push tag {{.NEXT_TAG}}" && exit 1)
 
   bump-patch:
     desc: Bump patch version
