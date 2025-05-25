@@ -1,132 +1,132 @@
 name: Release
 
 on:
-    pull_request:
-        branches: [ main ]
-        types: [ closed ]
-    workflow_dispatch:
-        inputs:
-            snapshot:
-                description: 'Create a snapshot release'
-                required: false
-                default: false
-                type: boolean
-            bump:
-                description: 'Bump type (major, minor, patch)'
-                required: true
-                default: 'patch'
-                type: choice
-                options:
-                    - major
-                    - minor
-                    - patch
+  pull_request:
+    branches: [main]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      snapshot:
+        description: Create a snapshot release
+        required: false
+        default: false
+        type: boolean
+      bump:
+        description: Bump type (major, minor, patch)
+        required: true
+        default: patch
+        type: choice
+        options:
+        - major
+        - minor
+        - patch
 
 permissions:
-    id-token: write
-    contents: write
+  id-token: write
+  contents: write
 
 env:
-    AWS_REGION: us-east-1
-    AWS_ROLE_ARN: arn:aws:iam::389719579847:role/github_actions
-    AWS_ROLE_SESSION_NAME: deployer-pr-checks-${{ github.run_id }}-${{ github.run_attempt }}
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::389719579847:role/github_actions
+  AWS_ROLE_SESSION_NAME: deployer-pr-checks-${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
-    release:
-        if: >-
-            (github.event_name == 'pull_request' &&
-            github.event.action == 'closed' &&
-            github.event.pull_request.base_ref == 'main' &&
-            contains(join(github.event.pull_request.labels.*.name, ','), 'bump:')) ||
-            github.event_name == 'workflow_dispatch'
-        runs-on:
-            - codebuild-builder-${{ github.run_id }}-${{ github.run_attempt }}
-            - image:aws/codebuild/standard:5.0
-            - instance-size:medium
-        name: Release
-        steps:
-            - name: Checkout
-              id: checkout
-              uses: actions/checkout@v4
-              with:
-                fetchDepth: 0
+  release:
+    if: >-
+      (github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.base_ref == 'main' &&
+      contains(join(github.event.pull_request.labels.*.name, ','), 'bump:')) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on:
+    - codebuild-builder-${{ github.run_id }}-${{ github.run_attempt }}
+    - image:aws/codebuild/standard:5.0
+    - instance-size:medium
+    name: Release
+    steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
+      with:
+        fetchDepth: 0
 
-            - name: Determine bump type
-              id: determine_bump
-              run: |
-                if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-                    echo "bump=${{ github.event.inputs.bump }}" >> $GITHUB_OUTPUT
-                else
-                    echo "Checking for bump label..."
-                    LABELS=$(echo '${{ toJson(github.event.pull_request.labels) }}' | jq -r 'if length > 0 then map(.name) | join(",") else "" end')
+    - name: Determine bump type
+      id: determine_bump
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "bump=${{ github.event.inputs.bump }}" >> $GITHUB_OUTPUT
+        else
+            echo "Checking for bump label..."
+            LABELS=$(echo '${{ toJson(github.event.pull_request.labels) }}' | jq -r 'if length > 0 then map(.name) | join(",") else "" end')
 
-                    if [[ -z "$LABELS" ]]; then
-                    echo "No labels found on the pull request. Skipping workflow."
-                    exit 0
-                    fi
+            if [[ -z "$LABELS" ]]; then
+            echo "No labels found on the pull request. Skipping workflow."
+            exit 0
+            fi
 
-                    echo "Labels: $LABELS"
-                    BUMP_LABELS=$(echo "$LABELS" | grep -oE "bump:(major|minor|patch)" | sort | uniq)
-                    BUMP_COUNT=$(echo "$BUMP_LABELS" | wc -l)
+            echo "Labels: $LABELS"
+            BUMP_LABELS=$(echo "$LABELS" | grep -oE "bump:(major|minor|patch)" | sort | uniq)
+            BUMP_COUNT=$(echo "$BUMP_LABELS" | wc -l)
 
-                    if [[ "$BUMP_COUNT" -gt 1 ]]; then
-                    echo "Error: Multiple bump labels found: $BUMP_LABELS. Please use only one bump label." >&2
-                    exit 1
-                    elif [[ "$BUMP_LABELS" == *"bump:major"* ]]; then
-                    echo "bump=major" >> $GITHUB_OUTPUT
-                    elif [[ "$BUMP_LABELS" == *"bump:minor"* ]]; then
-                    echo "bump=minor" >> $GITHUB_OUTPUT
-                    elif [[ "$BUMP_LABELS" == *"bump:patch"* ]]; then
-                    echo "bump=patch" >> $GITHUB_OUTPUT
-                    else
-                    echo "No bump label found. Skipping workflow."
-                    exit 0
-                    fi
-                fi
+            if [[ "$BUMP_COUNT" -gt 1 ]]; then
+            echo "Error: Multiple bump labels found: $BUMP_LABELS. Please use only one bump label." >&2
+            exit 1
+            elif [[ "$BUMP_LABELS" == *"bump:major"* ]]; then
+            echo "bump=major" >> $GITHUB_OUTPUT
+            elif [[ "$BUMP_LABELS" == *"bump:minor"* ]]; then
+            echo "bump=minor" >> $GITHUB_OUTPUT
+            elif [[ "$BUMP_LABELS" == *"bump:patch"* ]]; then
+            echo "bump=patch" >> $GITHUB_OUTPUT
+            else
+            echo "No bump label found. Skipping workflow."
+            exit 0
+            fi
+        fi
 
-            - name: Configure AWS Credentials
-              id: aws-credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                role-to-assume: ${{ env.AWS_ROLE_ARN }}
-                role-session-name: ${{ env.AWS_ROLE_SESSION_NAME }}
-                aws-region: ${{ env.AWS_REGION }}
-                output-credentials: true
+    - name: Configure AWS Credentials
+      id: aws-credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        role-session-name: ${{ env.AWS_ROLE_SESSION_NAME }}
+        aws-region: ${{ env.AWS_REGION }}
+        output-credentials: true
 
-            - name: Get Release Bot Token
-              id: get-token
-              uses: tibdex/github-app-token@v2.1.0
-              with:
-                app_id: ${{ secrets.RELEASE_AUTOMATOR_GH_APP_ID }}
-                private_key: ${{ secrets.RELEASE_AUTOMATOR_GH_APP_PRIVATE_KEY }}
+    - name: Get Release Bot Token
+      id: get-token
+      uses: tibdex/github-app-token@v2.1.0
+      with:
+        app_id: ${{ secrets.RELEASE_AUTOMATOR_GH_APP_ID }}
+        private_key: ${{ secrets.RELEASE_AUTOMATOR_GH_APP_PRIVATE_KEY }}
 
-            - name: Release
-              id: release
-              uses: devcontainers/ci@v0.3.1900000417
-              with:
-                subFolder: ${{ github.workspace }}
-                configFile: .devcontainer/CI/devcontainer.json
-                env: |
-                    AWS_REGION=${{ env.AWS_REGION }}
-                    AWS_ACCESS_KEY_ID=${{ steps.aws-credentials.outputs.aws-access-key-id }}
-                    AWS_SECRET_ACCESS_KEY=${{ steps.aws-credentials.outputs.aws-secret-access-key }}
-                    AWS_SESSION_TOKEN=${{ steps.aws-credentials.outputs.aws-session-token }}
-                    GITHUB_TOKEN=${{ steps.get-token.outputs.token }}
-                runCmd: |
-                    CURRENT_TAG=$(task get-current-tag | tail -n 1)
-                    NEXT_TAG=$(task get-next-tag VERSION_TYPE=${{ steps.determine_bump.outputs.bump }} | tail -n 1)
-                    echo "Bumping version from $CURRENT_TAG to $NEXT_TAG"
-                    task bump-${{ steps.determine_bump.outputs.bump }}
-                    task build-all
-                    if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.snapshot }}" = "true" ]; then
-                        task release-snapshot
-                    else
-                        task release
-                    fi
+    - name: Release
+      id: release
+      uses: devcontainers/ci@v0.3.1900000417
+      with:
+        subFolder: ${{ github.workspace }}
+        configFile: .devcontainer/CI/devcontainer.json
+        env: |
+          AWS_REGION=${{ env.AWS_REGION }}
+          AWS_ACCESS_KEY_ID=${{ steps.aws-credentials.outputs.aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY=${{ steps.aws-credentials.outputs.aws-secret-access-key }}
+          AWS_SESSION_TOKEN=${{ steps.aws-credentials.outputs.aws-session-token }}
+          GITHUB_TOKEN=${{ steps.get-token.outputs.token }}
+        runCmd: |
+          CURRENT_TAG=$(task get-current-tag | tail -n 1)
+          NEXT_TAG=$(task get-next-tag VERSION_TYPE=${{ steps.determine_bump.outputs.bump }} | tail -n 1)
+          echo "Bumping version from $CURRENT_TAG to $NEXT_TAG"
+          task bump-${{ steps.determine_bump.outputs.bump }}
+          task build-all
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.snapshot }}" = "true" ]; then
+              task release-snapshot
+          else
+              task release
+          fi
 
-            - name: Publish Release Artifacts
-              id: publish-artifacts
-              uses: actions/upload-artifact@v4
-              with:
-                name: release-artifacts
-                path: |
-                    artifacts/*
+    - name: Publish Release Artifacts
+      id: publish-artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-artifacts
+        path: |
+          artifacts/*
