@@ -61,4 +61,25 @@ data "aws_iam_policy_document" "account" {
       "ecr:ListImages",
     ]
   }
+  statement {
+    sid    = "AllowActionsPublish"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = [var.image_publish_role_arn]
+    }
+
+    actions = [
+      "ecr:CompleteLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:InitiateLayerUpload",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:PutImage",
+      "ecr:BatchGetImage"
+    ]
+    resources = [
+      aws_ecr_repository.ecr.arn
+    ]
+  }
 }
