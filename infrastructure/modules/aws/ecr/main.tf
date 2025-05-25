@@ -78,8 +78,5 @@ data "aws_iam_policy_document" "account" {
       "ecr:PutImage",
       "ecr:BatchGetImage"
     ]
-    resources = [
-      aws_ecr_repository.ecr.arn
-    ]
   }
 }
