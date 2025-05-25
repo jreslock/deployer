@@ -29,8 +29,44 @@ locals {
 
 # An ECR for the function's container image
 module "ecr" {
-  source = "../../modules/aws/ecr"
-  name   = "deployer_lambda"
+  source                 = "../../modules/aws/ecr"
+  name                   = "deployer_lambda"
+  image_publish_role_arn = "arn:aws:iam::${module.context.aws_account_id}:role/github-actions"
+}
+
+# Create an inline IAM policy for the actions role so it can
+# push to ECR
+resource "aws_iam_role_policy" "actions_ecr_publish" {
+  role   = "github-actions"
+  policy = data.aws_iam_policy_document.actions_ecr_publish.json
+}
+
+data "aws_iam_policy_document" "actions_ecr_publish" {
+  statement {
+    sid    = "AllowECRPublishing"
+    effect = "Allow"
+
+    resources = [module.ecr.ecr_arn]
+
+    actions = [
+      "ecr:CompleteLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:InitiateLayerUpload",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:PutImage",
+      "ecr:BatchGetImage"
+    ]
+  }
+  statement {
+    sid    = "GetECRAuthToken"
+    effect = "Allow"
+
+    resources = ["*"]
+
+    actions = [
+      "ecr:GetAuthorizationToken"
+    ]
+  }
 }
 
 # An SNS topic to send event notifications to

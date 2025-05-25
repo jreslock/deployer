@@ -18,11 +18,14 @@ URI, which can be used for pushing and pulling images.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_image_publish_role_arn"></a> [image\_publish\_role\_arn](#input\_image\_publish\_role\_arn) | Role ARN of the publisher | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Name for the ECR Repository to be created | `string` | n/a | yes |
 
 ## Outputs
 
-No outputs.
+| Name | Description |
+|------|-------------|
+| <a name="output_ecr_arn"></a> [ecr\_arn](#output\_ecr\_arn) | ARN of the ECR repository |
 
 ## Resources
 
