@@ -140,19 +140,14 @@ tasks:
 
   release:
     desc: Create a new release
-    deps:
-      - lint
-      - test
     env:
       GITHUB_TOKEN: '{{.GITHUB_TOKEN}}'
     cmds:
       - goreleaser release --clean
+      - task publish_image
 
   release-snapshot:
     desc: Create a snapshot release
-    deps:
-      - lint
-      - test
     env:
       GITHUB_TOKEN: '{{.GITHUB_TOKEN}}'
     cmds:
