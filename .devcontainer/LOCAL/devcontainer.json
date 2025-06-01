@@ -1,5 +1,5 @@
 {
-    "name": "deploer-dev",
+    "name": "deployer-dev",
     "build": {
         "dockerfile": "../Dockerfile"
     },

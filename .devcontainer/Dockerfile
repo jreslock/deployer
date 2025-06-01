@@ -48,19 +48,19 @@ RUN ARCH=$(uname -m) && \
     go install golang.org/x/tools/cmd/goimports@v0.31.0 > /dev/null && \
     # cosign
     LATEST_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | grep tag_name | cut -d : -f2 | tr -d "v\", ") && \
-    curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign_${LATEST_VERSION}_amd64.deb" && \
-    dpkg -i cosign_${LATEST_VERSION}_amd64.deb && \
-    rm -fr "comsign_${LATEST_VERSION}_amd64.deb" && \
+    curl -O -L https://github.com/sigstore/cosign/releases/latest/download/cosign_${LATEST_VERSION}_${ARCH}.deb && \
+    dpkg -i cosign_${LATEST_VERSION}_${ARCH}.deb && \
+    rm -fr cosign_${LATEST_VERSION}_${ARCH}.deb && \
     # tenv
     LATEST_VERSION=$(curl --silent https://api.github.com/repos/tofuutils/tenv/releases/latest | jq -r .tag_name) && \
-    curl -O -L "https://github.com/tofuutils/tenv/releases/latest/download/tenv_${LATEST_VERSION}_amd64.deb" && \
-    dpkg -i "tenv_${LATEST_VERSION}_amd64.deb" && \
+    curl -O -L https://github.com/tofuutils/tenv/releases/latest/download/tenv_${LATEST_VERSION}_${ARCH}.deb && \
+    dpkg -i "tenv_${LATEST_VERSION}_${ARCH}.deb" && \
     rm -fr /var/lib/apt/lists/* && \
-    rm -fr "tenv_${LATEST_VERSION}_amd64.deb" && \
+    rm -fr "tenv_${LATEST_VERSION}_${ARCH}.deb" && \
     # tofu
     tenv tofu install && \
     # terraform-docs
-    curl -sSLo ./terraform-docs.tar.gz https://terraform-docs.io/dl/v0.20.0/terraform-docs-v0.20.0-$(uname)-amd64.tar.gz && \
+    curl -sSLo ./terraform-docs.tar.gz https://terraform-docs.io/dl/v0.20.0/terraform-docs-v0.20.0-$(uname)-${ARCH}.tar.gz && \
     tar -xzf terraform-docs.tar.gz && \
     chmod +x terraform-docs && \
     mv terraform-docs /usr/local/bin/terraform-docs
