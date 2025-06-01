@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -14,32 +14,31 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-// FunctionWrapper encapsulates function actions used in the examples.
-// It contains an AWS Lambda service client that is used to perform user actions.
-type FunctionWrapper struct {
-	LambdaClient *lambdasdk.Client
-}
-
 // Event represents the structure of the SQS message
 type Event struct {
 	ImageURI string `json:"image_uri"`
 }
 
-// UpdateFunctionCode updates the code for the Lambda function specified by functionName.
-// The existing code for the Lambda function is entirely replaced by the code in the
-// zipPackage buffer. After the update action is called, a lambda.FunctionUpdatedV2Waiter
-// is used to wait until the update is successful.
 // FunctionConfig stores the name and image URI of a Lambda function
 type FunctionConfig struct {
 	FunctionName string
 	ImageURI     string
 }
 
+type LambdaAPI interface {
+	ListFunctions(ctx context.Context, params *lambdasdk.ListFunctionsInput, optCns ...func(*lambdasdk.Options)) (*lambdasdk.ListFunctionsOutput, error)
+	GetFunction(ctx context.Context, params *lambdasdk.GetFunctionInput, optFns ...func(*lambdasdk.Options)) (*lambdasdk.GetFunctionOutput, error)
+}
+
+type LambdaUpdateFunctionCodeAPI interface {
+	UpdateFunctionCode(ctx context.Context, params *lambdasdk.UpdateFunctionCodeInput, optFns ...func(*lambdasdk.Options)) (*lambdasdk.UpdateFunctionCodeOutput, error)
+}
+
 func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 	// Load AWS configuration
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		log.Fatalf("failed to load configuration: %v", err)
+		slog.Error("failed to load configuration", slog.Any("error", err))
 		return err
 	}
 
@@ -49,32 +48,32 @@ func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
 		var event Event
 		if err := json.Unmarshal([]byte(record.Body), &event); err != nil {
-			log.Printf("Error unmarshaling SQS message: %v", err)
+			slog.Warn("Error unmarshaling SQS message", slog.Any("error", err))
 			continue // Skip to the next message
 		}
 
-		log.Printf("Received image URI from SQS: %s", event.ImageURI)
+		slog.Info("Received image URI from SQS", slog.String("imageURI", event.ImageURI))
 
 		// Get all Lambda functions
 		functions, err := getAllLambdaFunctions(ctx, client)
 		if err != nil {
-			log.Printf("Error getting all Lambda functions: %v", err)
+			slog.Error("Error getting all Lambda functions", slog.Any("error", err))
 			return err
 		}
 
 		// Iterate through Lambda functions and check image URI
 		for _, function := range functions {
 			if function.ImageURI != "" && event.ImageURI != "" && function.ImageURI == event.ImageURI {
-				log.Printf("Found matching Lambda function: %s", function.FunctionName)
+				slog.Info("Found matching Lambda function", slog.String("functionName", function.FunctionName))
 
 				// Update Lambda function code
 				err = updateFunctionCode(ctx, client, function.FunctionName, event.ImageURI)
 				if err != nil {
-					log.Printf("Error updating Lambda function %s: %v", function.FunctionName, err)
+					slog.Error("Error updating Lambda function", slog.String("functionName", function.FunctionName), slog.Any("error", err))
 					return err
 				}
 
-				log.Printf("Successfully updated Lambda function: %s", function.FunctionName)
+				slog.Info("Successfully updated Lambda function", slog.String("functionName", function.FunctionName))
 			}
 		}
 	}
@@ -83,8 +82,8 @@ func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 }
 
 // getAllLambdaFunctions retrieves all Lambda functions in the current AWS account and region.
-func getAllLambdaFunctions(ctx context.Context, client *lambdasdk.Client) ([]FunctionConfig, error) {
-	var functions []FunctionConfig
+func getAllLambdaFunctions(ctx context.Context, client LambdaAPI) ([]FunctionConfig, error) {
+	functions := []FunctionConfig{}
 	var nextMarker *string
 
 	for {
@@ -92,7 +91,7 @@ func getAllLambdaFunctions(ctx context.Context, client *lambdasdk.Client) ([]Fun
 			Marker: nextMarker,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("error listing functions: %w", err)
+			return nil, err
 		}
 
 		for _, function := range output.Functions {
@@ -101,7 +100,7 @@ func getAllLambdaFunctions(ctx context.Context, client *lambdasdk.Client) ([]Fun
 				FunctionName: function.FunctionName,
 			})
 			if err != nil {
-				log.Printf("Error getting function details for %s: %v", *function.FunctionName, err)
+				slog.Warn("Error getting function details", slog.String("functionName", *function.FunctionName), slog.Any("error", err))
 				continue // Skip to the next function
 			}
 
@@ -127,18 +126,18 @@ func getAllLambdaFunctions(ctx context.Context, client *lambdasdk.Client) ([]Fun
 }
 
 // updateFunctionCode updates the Lambda function code with the new image URI.
-func updateFunctionCode(ctx context.Context, client *lambdasdk.Client, functionName string, imageURI string) error {
-	_, err := client.UpdateFunctionCode(ctx, &lambdasdk.UpdateFunctionCodeInput{
+func updateFunctionCode(ctx context.Context, client LambdaUpdateFunctionCodeAPI, functionName, imageURI string) error {
+	input := &lambdasdk.UpdateFunctionCodeInput{
 		FunctionName: aws.String(functionName),
 		ImageUri:     aws.String(imageURI),
-	})
-	if err != nil {
-		return fmt.Errorf("error updating function code: %w", err)
+		Publish:      true,
 	}
+	_, err := client.UpdateFunctionCode(ctx, input)
 
-	return nil
+	return err
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
 	lambda.Start(handler)
 }
