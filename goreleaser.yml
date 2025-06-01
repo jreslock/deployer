@@ -1,33 +1,15 @@
 version: 2
 
-builds:
-  - id: deployer_lambda
-    dir: ./lambda_functions/deployer
-    main: main.go
-    binary: deployer
-  - env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-    goarch:
-      - amd64
-    ldflags:
-      - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
+# We build an image via the Taskfile so we don't
+# need to build again via goreleaser, just push
+# the release artifacts
+builds: []
 
 archives:
   - formats: tar.gz
-    name_template: >-
-      {{- .ProjectName }}_{{ .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end -}}
-    format_overrides:
-      - goos: windows
-        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - artifacts/deployer-linux-amd64
 
 changelog:
   sort: asc
