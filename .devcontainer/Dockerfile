@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM public.ecr.aws/docker/library/golang:1.24.3-bookworm
+FROM public.ecr.aws/docker/library/golang:1.24.4-bookworm
 
 # Add binaries to PATH
 ENV PATH="/root/.tenv/bin:/root/.local/bin:$(go env GOPATH)/bin:${PATH}"
