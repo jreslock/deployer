@@ -142,7 +142,7 @@ tasks:
     env:
       GITHUB_TOKEN: '{{.GITHUB_TOKEN}}'
     cmds:
-      - goreleaser release --clean --skip=build
+      - goreleaser release --clean
       - task publish_image
 
   release-snapshot:

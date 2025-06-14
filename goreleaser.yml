@@ -1,8 +1,5 @@
 version: 2
 
-# We build an image via the Taskfile so we don't
-# need to build again via goreleaser, just push
-# the release artifacts
 builds: []
 
 archives: []
