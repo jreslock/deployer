@@ -5,11 +5,7 @@ version: 2
 # the release artifacts
 builds: []
 
-archives:
-  - formats: tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    files:
-      - artifacts/deployer-linux-amd64
+archives: []
 
 changelog:
   sort: asc
