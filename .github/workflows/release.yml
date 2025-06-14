@@ -113,15 +113,15 @@ jobs:
           NIX_SHOW_STATS: "0"
           NIX_VERBOSE: "0"
         run: |
-            CURRENT_TAG=$(nix develop --command task get-current-tag | tail -n 1)
-            NEXT_TAG=$(nix develop --command task get-next-tag VERSION_TYPE=${{ steps.determine_bump.outputs.bump }} | tail -n 1)
+            CURRENT_TAG=$(nix develop --quiet --command task get-current-tag | tail -n 1)
+            NEXT_TAG=$(nix develop --quiet --command task get-next-tag VERSION_TYPE=${{ steps.determine_bump.outputs.bump }} | tail -n 1)
             echo "Bumping version from $CURRENT_TAG to $NEXT_TAG"
-            nix develop --command task bump-${{ steps.determine_bump.outputs.bump }}
-            nix develop --command task build
+            nix develop --quiet --command task bump-${{ steps.determine_bump.outputs.bump }}
+            nix develop --quiet --command task build
             if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.snapshot }}" = "true" ]; then
-                nix develop --command task release-snapshot
+                nix develop --quiet --command task release-snapshot
             else
-                nix develop --command task release
+                nix develop --quiet --command task release
             fi
 
       - name: Publish Release Artifacts
