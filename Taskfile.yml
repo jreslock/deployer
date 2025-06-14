@@ -19,7 +19,7 @@ tasks:
     cmds:
       - mkdir -p {{.ARTIFACTS_DIR}}
       - cd {{ .SRC_DIR }} && CGO_ENABLED=0 GOOS=linux GOOS_ARCH=amd64 go build -o
-       ../../{{.ARTIFACTS_DIR}}/{{.BINARY_NAME}}-linux-amd64 main.go
+        ../../{{.ARTIFACTS_DIR}}/{{.BINARY_NAME}}-linux-amd64 main.go
 
   fmt:
     desc: Run go fmt
@@ -123,17 +123,17 @@ tasks:
       TAG:
         sh: task get-current-tag | tail -n 1
     cmds:
-      - aws ecr get-login-password \
-        --region us-east-1 | docker login \
-        --username AWS \
-        --password-stdin {{ .ECR }}
-      - docker buildx build \
-        --platform=linux/amd64 \
-        --provenance=false
-        -t {{ .ECR }}/{{ .BINARY_NAME }}:latest \
-        -t {{ .ECR }}/{{ .BINARY_NAME }}:{{ .TAG }} \
-        -f {{ .SRC_DIR }}/Dockerfile . \
-        --push
+      - |
+        aws ecr get-login-password --region us-east-1 | docker login \
+          --username AWS \
+          --password-stdin {{ .ECR }}
+        docker buildx build \
+          --platform=linux/amd64 \
+          --provenance=false \
+          -t {{ .ECR }}/{{ .BINARY_NAME }}_lambda:latest \
+          -t {{ .ECR }}/{{ .BINARY_NAME }}_lambda:{{ .TAG }} \
+          -f {{ .SRC_DIR }}/Dockerfile . \
+          --push
 
   release:
     desc: Create a new release
@@ -152,7 +152,7 @@ tasks:
     env:
       GITHUB_TOKEN: '{{.GITHUB_TOKEN}}'
     cmds:
-      - goreleaser release --snapshot --clean --skip=build
+      - goreleaser release --snapshot --clean
 
   pre-commit-install:
     desc: Install pre-commit hooks
