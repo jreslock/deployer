@@ -1,4 +1,8 @@
 
+<a name="v0.0.10"></a>
+## [v0.0.10](https://github.com/jreslock/deployer/compare/v0.0.9...v0.0.10) (2025-06-14)
+
+
 <a name="v0.0.9"></a>
 ## [v0.0.9](https://github.com/jreslock/deployer/compare/v0.0.8...v0.0.9) (2025-06-14)
 
