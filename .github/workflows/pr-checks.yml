@@ -47,6 +47,6 @@ jobs:
         NIX_SHOW_STATS: "0"
         NIX_VERBOSE: "0"
       run: |
-        nix develop --command task lint
-        nix develop --command task test
-        nix develop --command task build
+        nix develop --quiet --command task lint
+        nix develop --quiet --command task test
+        nix develop --quiet --command task build

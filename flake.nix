@@ -22,6 +22,7 @@
             docker
             docker-buildx
             git
+            git-chglog
             go
             golangci-lint
             goreleaser
